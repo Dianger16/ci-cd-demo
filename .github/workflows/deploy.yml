@@ -132,16 +132,17 @@ jobs:
           script: |
             set -e
 
-            cd /home/${{ secrets.EC2_USER }}/cicd-demo
+            cd /home/ubuntu/cicd-demo
 
             chmod +x scripts/deploy_ec2.sh
             chmod +x scripts/health_check.sh
 
             bash scripts/deploy_ec2.sh \
-              "${{ needs.build.outputs.full_image }}" \
-              "${{ needs.build.outputs.image_tag }}" \
-              "${{ env.CONTAINER_NAME }}" \
-              "${{ env.APP_PORT }}"
+              "dianger16/ci-cd-demo:${{ github.sha }}" \
+              "${{ github.sha }}" \
+              "cicd-demo-app" \
+              "3000"
+              
 
       - name: Deployment success notification
         if: success()

@@ -1,0 +1,27 @@
+
+════════════════════════════════════════
+  Deploy started: Tue May 12 15:26:22 UTC 2026
+  Image: dianger16/ci-cd-demo:v1
+════════════════════════════════════════
+[0;34m[15:26:22][0m Capturing current stable state...
+[0;34m[15:26:22][0m No running container found — fresh deploy.
+[0;34m[15:26:22][0m Pulling new image: dianger16/ci-cd-demo:v1
+Error response from daemon: pull access denied for dianger16/ci-cd-demo, repository does not exist or may require 'docker login'
+
+════════════════════════════════════════
+  Deploy started: Tue May 12 17:19:20 UTC 2026
+  Image: 
+════════════════════════════════════════
+[0;34m[17:19:20][0m Capturing current stable state...
+[0;34m[17:19:20][0m No running container found — fresh deploy.
+[0;34m[17:19:20][0m Pulling new image: 
+invalid reference format
+
+════════════════════════════════════════
+  Deploy started: Tue May 12 17:19:50 UTC 2026
+  Image: 
+════════════════════════════════════════
+[0;34m[17:19:50][0m Capturing current stable state...
+[0;34m[17:19:50][0m No running container found — fresh deploy.
+[0;34m[17:19:50][0m Pulling new image: 
+invalid reference format
