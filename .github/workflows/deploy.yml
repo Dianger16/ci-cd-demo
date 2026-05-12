@@ -1,86 +1,156 @@
-name: CI-CD Pipeline
+name: CI/CD Pipeline with Auto Rollback
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
+
+  pull_request:
+    branches: [main]
+
+env:
+  IMAGE_NAME: cicd-demo
+  CONTAINER_NAME: cicd-demo-app
+  APP_PORT: 3000
 
 jobs:
+
+  # =========================================================
+  # JOB 1 — TEST
+  # =========================================================
   test:
+    name: Run tests
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: app
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v5
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: app/package-lock.json
 
-      - name: Install Dependencies
-        run: npm install
+      - name: Install dependencies
+        working-directory: app
+        run: npm ci
 
-      - name: Run Tests
+      - name: Run tests with coverage
+        working-directory: app
         run: npm test
 
-      - name: Upload Coverage
+      - name: Upload coverage report
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
-          path: app/coverage
+          path: app/coverage/
 
+  # =========================================================
+  # JOB 2 — BUILD + PUSH IMAGE
+  # =========================================================
   build:
-    needs: test
+    name: Build & Push Docker Image
     runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    needs: test
 
-      - name: Login Docker Hub
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    outputs:
+      image_tag: ${{ steps.tag.outputs.tag }}
+      full_image: ${{ steps.tag.outputs.full_image }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Generate image tag
+        id: tag
+        run: |
+          TAG="${GITHUB_SHA::8}"
+
+          FULL_IMAGE="${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:$TAG"
+
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "full_image=$FULL_IMAGE" >> $GITHUB_OUTPUT
+
+          echo "Using image: $FULL_IMAGE"
+
+      - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build Image
+      - name: Build Docker image
         run: |
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/cicd-demo:${{ github.sha }} ./app
+          docker build \
+            -t ${{ steps.tag.outputs.full_image }} \
+            -t ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest \
+            ./app
 
-      - name: Push Image
+      - name: Push Docker images
         run: |
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/cicd-demo:${{ github.sha }}
+          docker push ${{ steps.tag.outputs.full_image }}
 
+          docker push \
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+
+  # =========================================================
+  # JOB 3 — DEPLOY + AUTO ROLLBACK
+  # =========================================================
   deploy:
-    needs: build
+    name: Deploy to EC2 + Auto Rollback
     runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    needs: build
 
-      - name: Copy Deploy Script
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Copy deployment scripts to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "scripts/deploy_ec2.sh"
-          target: "~/cicd-demo"
 
-      - name: Deploy App
+          source: "scripts/"
+          target: "/home/${{ secrets.EC2_USER }}/cicd-demo"
+
+      - name: Deploy application on EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            chmod +x ~/cicd-demo/scripts/deploy_ec2.sh
 
-            ~/cicd-demo/scripts/deploy_ec2.sh \
-            ${{ secrets.DOCKERHUB_USERNAME }}/cicd-demo:${{ github.sha }}
+          script: |
+            set -e
+
+            cd /home/${{ secrets.EC2_USER }}/cicd-demo
+
+            chmod +x scripts/deploy_ec2.sh
+            chmod +x scripts/health_check.sh
+
+            bash scripts/deploy_ec2.sh \
+              "${{ needs.build.outputs.full_image }}" \
+              "${{ needs.build.outputs.image_tag }}" \
+              "${{ env.CONTAINER_NAME }}" \
+              "${{ env.APP_PORT }}"
+
+      - name: Deployment success notification
+        if: success()
+        run: |
+          echo "::notice::Deployment successful!"
+          echo "::notice::Version: ${{ needs.build.outputs.image_tag }}"
+
+      - name: Deployment failed notification
+        if: failure()
+        run: |
+          echo "::error::Deployment failed!"
+          echo "::error::Auto rollback executed on EC2."
