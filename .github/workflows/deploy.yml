@@ -70,7 +70,7 @@ jobs:
         run: |
           TAG="${GITHUB_SHA::8}"
 
-          FULL_IMAGE="${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:$TAG"
+          FULL_IMAGE="${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${TAG}"
 
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "full_image=$FULL_IMAGE" >> $GITHUB_OUTPUT
@@ -94,8 +94,7 @@ jobs:
         run: |
           docker push ${{ steps.tag.outputs.full_image }}
 
-          docker push \
-            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
 
   # =========================================================
   # JOB 3 — DEPLOY + AUTO ROLLBACK
