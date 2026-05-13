@@ -83,6 +83,14 @@ log "Stopping old container..."
 docker stop "$CONTAINER_NAME" 2>/dev/null || true
 docker rm "$CONTAINER_NAME" 2>/dev/null || true
 
+# Kill any other container that may be holding the port
+EXISTING=$(docker ps --filter "publish=${APP_PORT}" --format '{{.Names}}' 2>/dev/null || true)
+if [ -n "$EXISTING" ]; then
+  warn "Port ${APP_PORT} in use by: ${EXISTING} — stopping it..."
+  docker stop "$EXISTING" 2>/dev/null || true
+  docker rm "$EXISTING" 2>/dev/null || true
+fi
+
 log "Starting new container..."
 
 docker run -d \
