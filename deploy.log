@@ -70,3 +70,12 @@ Image: dianger16/ci-cd-demo:946e5cee96b7ecac0a524fe7b6bcbb6e931fb62c
 [0;34m[09:11:40][0m No running container found — fresh deploy.
 [0;34m[09:11:40][0m Pulling image: dianger16/ci-cd-demo:946e5cee96b7ecac0a524fe7b6bcbb6e931fb62c
 Error response from daemon: failed to resolve reference "docker.io/dianger16/ci-cd-demo:946e5cee96b7ecac0a524fe7b6bcbb6e931fb62c": docker.io/dianger16/ci-cd-demo:946e5cee96b7ecac0a524fe7b6bcbb6e931fb62c: not found
+
+════════════════════════════════════════
+Deploy started: Wed May 13 09:32:45 UTC 2026
+Image: dianger16/ci-cd-demo:9c9f2604c752fb6551274d03d97c6be2dfaa1b1c
+════════════════════════════════════════
+[0;34m[09:32:45][0m Capturing current stable state...
+[0;34m[09:32:45][0m No running container found — fresh deploy.
+[0;34m[09:32:45][0m Pulling image: dianger16/ci-cd-demo:9c9f2604c752fb6551274d03d97c6be2dfaa1b1c
+Error response from daemon: failed to resolve reference "docker.io/dianger16/ci-cd-demo:9c9f2604c752fb6551274d03d97c6be2dfaa1b1c": docker.io/dianger16/ci-cd-demo:9c9f2604c752fb6551274d03d97c6be2dfaa1b1c: not found
