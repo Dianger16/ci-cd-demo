@@ -1,4 +1,4 @@
-# CI/CD Demo — Node.js + Docker + GitHub Actions + EC2
+# CI/CD  — Node.js + Docker + GitHub Actions + EC2
 
 A production-style CI/CD pipeline that automatically tests, builds, and deploys a Node.js app to AWS EC2 using GitHub Actions, Docker Hub, and auto rollback on failure.
 
